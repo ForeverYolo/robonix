@@ -90,5 +90,25 @@ class PersistenceCleanupTests(unittest.TestCase):
                 self.assertEqual(calls.count(("POST", "delete", "loaded_a")), 1)
 
 
+class LoadedMapGeometryTests(unittest.TestCase):
+    def test_float32_boundary_rounding_preserves_the_requested_tolerance(self):
+        artifact = {"exists": True, "engine": "rtabmap", "db_exists": True,
+                    "quick_check": "ok", "counts": {"Node": 19}, "artifact_size": 1_000_000,
+                    "preview_exists": True, "preview_width": 66, "preview_height": 105,
+                    "meta": {"width": 66, "height": 105, "resolution": 0.05000000074505806,
+                             "origin": "[-0.5750003457069397, -2.2537922859191895, 0.0]"}}
+        grid = {"width": 65, "height": 104, "known": 1743, "resolution": 0.05000000074505806,
+                "origin_x": -0.5250469446182251, "origin_y": -2.203791856765747}
+        loaded = {"ok": True, "occupancy": {"width": 65, "height": 104, "count": 2, "stamp_unix": 123.0}}
+        for offset, expected in ((0, 0), (0.001, 1)):
+            with self.subTest(offset=offset), \
+                    patch.object(verifier, "http_json", return_value=loaded), \
+                    patch.object(verifier, "mapping_artifact", return_value=artifact), \
+                    patch.object(verifier, "live_map", return_value={**grid, "origin_y": grid["origin_y"] + offset}), \
+                    patch("sys.argv", ["verify_scene_map_persistence.py", "--skip-save"]), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(verifier.main(), expected)
+
+
 if __name__ == "__main__":
     unittest.main()

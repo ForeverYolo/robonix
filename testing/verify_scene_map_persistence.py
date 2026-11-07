@@ -385,7 +385,8 @@ def main() -> int:
             ly1 = ly0 + live_h * float(live.get("resolution") or res)
             sx0, sy0 = meta_origin
             sx1, sy1 = sx0 + expected_w * res, sy0 + expected_h * res
-            tol = args.origin_tolerance
+            # Float32 ROS grid origins can round the boundary by a fraction of a micrometre.
+            tol = args.origin_tolerance + 1e-6
             check("loaded_map_covers_saved_map",
                   lx0 <= sx0 + tol and ly0 <= sy0 + tol and lx1 >= sx1 - tol and ly1 >= sy1 - tol,
                   f"saved=[{sx0:.2f},{sy0:.2f}]..[{sx1:.2f},{sy1:.2f}] "
